@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "CommandKey": {
+      "title": "Command Key",
+      "description": "Secure access keys for executive control",
+      "type": "object",
+      "properties": {
+        "hashed_key": { "type": "string" },
+        "assigned_role": { "type": "string", "enum": ["CEO", "ADMIN", "ENGINEER"] },
+        "status": { "type": "string", "enum": ["active", "revoked"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "revoked": { "type": "boolean" }
+      },
+      "required": ["hashed_key", "assigned_role", "status", "created_at", "revoked"]
+    },
+    "User": {
+      "title": "User Profile",
+      "description": "Enterprise user account data",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string" },
+        "command_key_id": { "type": "string" },
+        "system_status": { "type": "string" }
+      }
+    },
+    "Project": {
+      "title": "Construction Project",
+      "description": "Structural site data and milestone progress",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "location": { "type": "string" },
+        "status": { "type": "string" },
+        "budget": {
+          "type": "object",
+          "properties": {
+            "total": { "type": "number" },
+            "spent": { "type": "number" },
+            "currency": { "type": "string" }
+          }
+        },
+        "labor_count": { "type": "integer" },
+        "milestones": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    },
+    "SecurityLog": {
+      "title": "Security Log",
+      "description": "Audit trail for system access attempts",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "ip_address": { "type": "string" },
+        "threat_level": { "type": "string" },
+        "access_status": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "command_keys": { "schema": "CommandKey", "description": "Active and revoked command keys" },
+    "users": { "schema": "User", "description": "User profiles" },
+    "projects": { "schema": "Project", "description": "Active construction sites" },
+    "security_logs": { "schema": "SecurityLog", "description": "System security audit logs" },
+    "employees": { "schema": "Employee", "description": "Staff and executive directory" },
+    "security_metrics": { "schema": "SecurityMetric", "description": "System health and threat metrics" }
+  }
+}

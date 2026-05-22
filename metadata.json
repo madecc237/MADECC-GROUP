@@ -1,0 +1,6 @@
+{
+  "name": "MADECC Executive Command System",
+  "description": "Secure executive control terminal for construction management and structural site monitoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

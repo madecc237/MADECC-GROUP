@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definition
+    function isSignedIn() { return request.auth != null; }
+    function isEmailVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { return isEmailVerified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['ADMIN', 'CEO']; }
+    function isCEO() { return isEmailVerified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'CEO'; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Validation Blueprints
+    function isValidCommandKey(data) {
+      return data.keys().hasAll(['hashed_key', 'assigned_role', 'status', 'created_at', 'revoked']) &&
+             data.keys().size() == 5 &&
+             data.hashed_key is string && data.hashed_key.size() <= 256 &&
+             data.assigned_role in ['CEO', 'ADMIN', 'ENGINEER', 'FINANCIAL_OFFICER', 'PROJECT_MANAGER', 'SECRETARY', 'ACCOUNTANT'] &&
+             data.status in ['active', 'revoked'] &&
+             data.created_at == request.time &&
+             data.revoked is bool;
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['title', 'location', 'status', 'budget']) &&
+             data.title is string && data.title.size() <= 256 &&
+             data.location is string && data.location.size() <= 256 &&
+             data.status is string &&
+             data.budget is map &&
+             data.budget.total is number && data.budget.total >= 0;
+    }
+
+    // 1. command_keys
+    match /command_keys/{keyId} {
+      allow get: if isSignedIn() && (isCEO() || isAdmin());
+      allow list: if isSignedIn() && (isCEO() || isAdmin());
+      allow create: if isCEO() && isValidId(keyId) && isValidCommandKey(incoming());
+      allow update: if (isCEO() || isAdmin()) && 
+                    isValidCommandKey(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['status', 'revoked']);
+    }
+
+    // 2. users
+    match /users/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin() || isCEO());
+      allow list: if isSignedIn() && (isAdmin() || isCEO());
+      allow create: if isOwner(userId) && 
+                    incoming().keys().hasAll(['email', 'role', 'system_status']) &&
+                    incoming().role == 'ENGINEER' && 
+                    incoming().system_status == 'pending';
+      allow update: if (isAdmin() || isCEO()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['role', 'system_status', 'command_key_id']);
+    }
+
+    // 3. projects
+    match /projects/{projectId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && (resource.data.status != 'archived' || isAdmin() || isCEO());
+      allow create: if (isAdmin() || isCEO()) && isValidId(projectId) && isValidProject(incoming());
+      allow update: if isSignedIn() && (
+        // Terminal State Locking
+        (existing().status != 'completed' || isCEO()) && (
+          (isCEO() || isAdmin()) && isValidProject(incoming()) ||
+          // Engineer Action: Update restricted fields
+          (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'labor_count', 'site_images']) && 
+           isSignedIn() && isEmailVerified())
+        )
+      );
+      allow delete: if isCEO();
+    }
+
+    // 4. security_logs - System Managed
+    match /security_logs/{logId} {
+      allow read: if isAdmin() || isCEO();
+      allow create: if isSignedIn(); // Allow logging from identified clients
+    }
+
+    // 5. employees
+    match /employees/{empId} {
+      allow read: if isSignedIn() && (isAdmin() || isCEO() || isSecretary());
+      allow write: if isCEO() || isAdmin();
+    }
+
+    // 6. security_metrics
+    match /security_metrics/{metricId} {
+      allow read: if isCEO() || isAdmin();
+      allow write: if false; // System only
+    }
+
+    function isSecretary() { return isEmailVerified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SECRETARY'; }
+  }
+}
