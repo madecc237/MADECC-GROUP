@@ -94,8 +94,8 @@ const seedInitialKeys = async () => {
         {
           title: 'Structural Engineering Framework',
           ref: 'C-2026-001',
-          affiliatedProject: 'Metropolis Plaza',
-          pid: '101',
+          affiliatedProject: 'Executive Tower Phase II',
+          pid: 'YDE-01',
           party: 'Atkins Global',
           signedDate: '2025-11-20',
           expiration: '2026-11-20',
@@ -106,8 +106,8 @@ const seedInitialKeys = async () => {
         {
           title: 'Civil Construction Agreement',
           ref: 'C-2026-002',
-          affiliatedProject: 'Horizon Ocean Villas',
-          pid: '102',
+          affiliatedProject: 'Kribi Cold Logistics Hub',
+          pid: 'KRI-02',
           party: 'Emaar Properties',
           signedDate: '2026-02-15',
           expiration: '2026-06-15',
@@ -123,6 +123,126 @@ const seedInitialKeys = async () => {
         });
       }
       console.log("[SECURITY] Contract archives initialized.");
+    }
+
+    // Seed initial projects if empty
+    const projectsSnap = await db.collection('projects').limit(1).get();
+    if (projectsSnap.empty) {
+      console.log("[SECURITY] Seeding initial construction projects...");
+      const initialProjects = [
+        {
+          id: 'YDE-01',
+          name: 'Executive Tower Phase II',
+          location: 'Yaoundé, Central Business District',
+          budget: '1.45B XAF',
+          status: 'Execution',
+          progress: 65,
+          color: '#F26A36',
+          milestones: [
+            { step: 'Foundation & Grading', date: '2025-Q4', status: 'Complete' },
+            { step: 'Structural Caging', date: '2026-Q1', status: 'In Progress' },
+            { step: 'MEP Integration', date: '2026-Q3', status: 'Scheduled' }
+          ],
+          logs: [
+            { title: 'Steel Reinforcement Bars', amount: '-4,500,000 XAF', idStr: 'TXN_8192_1' },
+            { title: 'Excavator Fuel Dispatch', amount: '-1,200,000 XAF', idStr: 'TXN_8192_2' }
+          ]
+        },
+        {
+          id: 'YDE-04',
+          name: 'Logbessou Residential Complex',
+          location: 'Logbessou, Douala',
+          budget: '890M XAF',
+          status: 'Planning',
+          progress: 15,
+          color: '#3B82F6',
+          milestones: [
+            { step: 'Soil Mechanical Boring', date: '2026-Q1', status: 'Complete' },
+            { step: 'Excavation Framework', date: '2026-Q2', status: 'Scheduled' }
+          ],
+          logs: []
+        },
+        {
+          id: 'KRI-02',
+          name: 'Kribi Cold Logistics Hub',
+          location: 'Industrial Zone, Kribi Port',
+          budget: '2.2B XAF',
+          status: 'Structural',
+          progress: 92,
+          color: '#10B981',
+          milestones: [
+            { step: 'Slab Concrete Pouring', date: '2025-Q3', status: 'Complete' },
+            { step: 'Insulated Wall Installation', date: '2026-Q1', status: 'Complete' },
+            { step: 'Compressor Integrity Run', date: '2026-Q2', status: 'In Progress' }
+          ],
+          logs: []
+        }
+      ];
+      for (const prj of initialProjects) {
+        await db.collection('projects').doc(prj.id).set({
+          ...prj,
+          createdAt: new Date().toISOString()
+        });
+      }
+      console.log("[SECURITY] Construction projects initialized.");
+    }
+
+    // Seed initial employees if empty
+    const employeesSnap = await db.collection('employees').limit(1).get();
+    if (employeesSnap.empty) {
+      console.log("[SECURITY] Seeding initial staff roster...");
+      const staffList = [
+        { name: 'Jean-Paul Ndi', role: 'CEO', status: 'Headquarters', duty: 'Chief Executive Authority' },
+        { name: 'Bonaventure Kalou', role: 'PROJECT MANAGER', status: 'Mobile - Field Inspection', duty: 'Field Operations Command' },
+        { name: 'PR Team Alpha', role: 'CONTENT EDITOR', status: 'Remote', duty: 'Information & Media Control' },
+        { name: 'Marthe Njole', role: 'FINANCIAL OFFICER', status: 'Headquarters', duty: 'Fiscal & Treasury Audit' },
+        { name: 'Patrick Mboma', role: 'ACCOUNTANT', status: 'Headquarters', duty: 'Accounting & Financial Record Keeping (CEO-Provisioned Access Required)' },
+        { name: 'Rigobert Song', role: 'SECRETARY', status: 'Headquarters', duty: 'Administrative Liaison & Document Archiving (CEO-Provisioned Access Required)' }
+      ];
+      for (const member of staffList) {
+        await db.collection('employees').add({
+          ...member,
+          createdAt: new Date().toISOString()
+        });
+      }
+      console.log("[SECURITY] Staff directory initialized.");
+    }
+
+    // Seed initial invoices if empty
+    const invoicesSnap = await db.collection('invoices').limit(1).get();
+    if (invoicesSnap.empty) {
+      console.log("[SECURITY] Seeding initial physical invoices...");
+      const initialInvoices = [
+        { id: 'INV-2026-001', client: 'Port Authority of Kribi', amount: '12,500,000 XAF', status: 'Paid', date: '2026-05-10', project: 'Kribi Cold Logistics Hub' },
+        { id: 'INV-2026-002', client: 'Bolloré Logistics Douala', amount: '8,200,000 XAF', status: 'Pending', date: '2026-05-18', project: 'Logbessou Residential Complex' },
+        { id: 'INV-2026-003', client: 'State Housing Corporation', amount: '45,000,000 XAF', status: 'Overdue', date: '2026-04-01', project: 'Executive Tower Phase II' }
+      ];
+      for (const inv of initialInvoices) {
+        await db.collection('invoices').add({
+          ...inv,
+          createdAt: new Date().toISOString()
+        });
+      }
+      console.log("[SECURITY] Invoices database initialized.");
+    }
+
+    // Seed initial receipts if empty
+    const receiptsSnap = await db.collection('receipts').limit(1).get();
+    if (receiptsSnap.empty) {
+      console.log("[SECURITY] Seeding initial expense receipts...");
+      const initialReceipts = [
+        { rcpId: 'RCP-8812', vendor: 'Steel-Cam Industries', category: 'Materials', amount: '8,450,000 XAF', date: 'May 14, 2026', status: 'Verified', project: 'Executive Tower Phase II' },
+        { rcpId: 'RCP-8813', vendor: 'TotalEnergies Logistics', category: 'Fuel', amount: '1,200,000 XAF', date: 'May 13, 2026', status: 'Pending', project: 'Executive Tower Phase II' },
+        { rcpId: 'RCP-8814', vendor: 'Concrete Solutions SARL', category: 'Materials', amount: '12,000,000 XAF', date: 'May 12, 2026', status: 'Verified', project: 'Kribi Cold Logistics Hub' },
+        { rcpId: 'RCP-8815', vendor: 'Global Office Supplies', category: 'Admin', amount: '450,000 XAF', date: 'May 10, 2026', status: 'Verified', project: 'Headquarters' }
+      ];
+      for (const rcp of initialReceipts) {
+        await db.collection('receipts').add({
+          ...rcp,
+          createdAt: new Date().toISOString()
+        });
+      }
+      console.log("[SECURITY] Digital receipts ledger initialized.");
     }
   } catch (err: any) {
     if (err.code === 7) {
@@ -178,25 +298,80 @@ async function startServer() {
 
   // Contact API Endpoint
   app.post("/api/contact", async (req, res) => {
-    const { name, email, message } = req.body;
+    const { name, email, message, phone, company, serviceType, budget, location, timeline } = req.body;
 
     if (!name || !email || !message) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
     try {
+      // Build descriptive plain-text and HTML summaries for construction queries
+      const textBody = [
+        `Name: ${name}`,
+        `Email: ${email}`,
+        phone ? `Phone: ${phone}` : '',
+        company ? `Company/Org: ${company}` : '',
+        serviceType ? `Service Requested: ${serviceType}` : '',
+        location ? `Project Location: ${location}` : '',
+        budget ? `Estimated Budget: ${budget}` : '',
+        timeline ? `Desired Timeline: ${timeline}` : '',
+        `\nMessage:\n${message}`
+      ].filter(Boolean).join('\n');
+
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #ddd; border-radius: 8px; padding: 20px;">
+          <h2 style="color: #F26A36; border-bottom: 2px solid #F26A36; padding-bottom: 10px; margin-top: 0;">New Construction Project Inquiry</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; width: 140px; border-bottom: 1px solid #eee;">Client Name:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #eee;">Email Address:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><a href="mailto:${email}" style="color: #F26A36; text-decoration: none;">${email}</a></td>
+            </tr>
+            ${phone ? `
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #eee;">Phone Number:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${phone}</td>
+            </tr>` : ''}
+            ${company ? `
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #eee;">Company:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${company}</td>
+            </tr>` : ''}
+            ${serviceType ? `
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #eee;">Service:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${serviceType}</td>
+            </tr>` : ''}
+            ${location ? `
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #eee;">Project Location:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${location}</td>
+            </tr>` : ''}
+            ${budget ? `
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #eee;">Project Budget:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${budget}</td>
+            </tr>` : ''}
+            ${timeline ? `
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #eee;">Timeline:</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${timeline}</td>
+            </tr>` : ''}
+          </table>
+          <h4 style="color: #444; margin-bottom: 5px;">Project Brief / Message:</h4>
+          <p style="background: #f9f9f9; padding: 15px; border-left: 4px solid #F26A36; white-space: pre-wrap; margin-top: 0; border-radius: 4px;">${message}</p>
+        </div>
+      `;
+
       await transporter.sendMail({
         from: process.env.SMTP_FROM || "kreboya603@gmail.com",
         to: "kreboya603@gmail.com",
-        subject: `New Contact Form Submission from ${name}`,
-        text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-        html: `
-          <h3>New Contact Form Submission</h3>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Message:</strong></p>
-          <p>${message}</p>
-        `,
+        subject: `[Project Intake] ${serviceType || 'General'} - from ${name}`,
+        text: textBody,
+        html: htmlBody,
       });
 
       res.status(200).json({ success: true, message: "Message sent successfully" });
@@ -394,6 +569,152 @@ async function startServer() {
       const snapshot = await db.collection('employees').get();
       const employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       return res.status(200).json(employees);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Create Employee (CEO/Secretary)
+  app.post('/api/executive/employees', verifyCommandKey, async (req: any, res) => {
+    if (!['CEO', 'SECRETARY'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'ACCESS DENIED: Insufficient privilege to onboard staff.' });
+    }
+    try {
+      const employee = req.body;
+      const ref = await db.collection('employees').add({
+        ...employee,
+        createdAt: new Date().toISOString()
+      });
+      return res.status(201).json({ id: ref.id, ...employee });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Create Project (CEO/Project Manager)
+  app.post('/api/executive/projects', verifyCommandKey, async (req: any, res) => {
+    if (!['CEO', 'PROJECT MANAGER'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'ACCESS DENIED: Insufficient privilege to create projects.' });
+    }
+    try {
+      const project = req.body;
+      const docId = project.id || `PRJ-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      await db.collection('projects').doc(docId).set({
+        ...project,
+        id: docId,
+        createdAt: new Date().toISOString()
+      });
+      return res.status(201).json({ id: docId, ...project });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Update Project Details & Milestones (CEO/Project Manager/Engineer)
+  app.put('/api/executive/projects/:id', verifyCommandKey, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      await db.collection('projects').doc(id).update({
+        ...updates,
+        updatedAt: new Date().toISOString()
+      });
+      return res.status(200).json({ success: true, message: 'Project structural update complete.' });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Fetch Invoices (CEO/Financial Officer/Accountant)
+  app.get('/api/executive/invoices', verifyCommandKey, async (req: any, res) => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT', 'SECRETARY'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'ACCESS DENIED: Insufficient privilege for invoice records.' });
+    }
+    try {
+      const snapshot = await db.collection('invoices').get();
+      const invoices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return res.status(200).json(invoices);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Create Invoice (CEO/Financial Officer/Accountant)
+  app.post('/api/executive/invoices', verifyCommandKey, async (req: any, res) => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'ACCESS DENIED: Insufficient privilege to raise invoices.' });
+    }
+    try {
+      const invoice = req.body;
+      const ref = await db.collection('invoices').add({
+        ...invoice,
+        createdAt: new Date().toISOString()
+      });
+      return res.status(201).json({ id: ref.id, ...invoice });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Update Invoice Status (CEO/Financial Officer/Accountant)
+  app.patch('/api/executive/invoices/:id', verifyCommandKey, async (req: any, res) => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'ACCESS DENIED: Insufficient privilege to alter invoice states.' });
+    }
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      await db.collection('invoices').doc(id).update({
+        status,
+        updatedAt: new Date().toISOString()
+      });
+      return res.status(200).json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Fetch Receipts (CEO/Financial Officer/Accountant)
+  app.get('/api/executive/receipts', verifyCommandKey, async (req: any, res) => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'ACCESS DENIED: Insufficient privilege for receipts ledger.' });
+    }
+    try {
+      const snapshot = await db.collection('receipts').get();
+      const receipts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      return res.status(200).json(receipts);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Create Receipt (CEO/Financial Officer/Accountant)
+  app.post('/api/executive/receipts', verifyCommandKey, async (req: any, res) => {
+    try {
+      const receipt = req.body;
+      const ref = await db.collection('receipts').add({
+        ...receipt,
+        createdAt: new Date().toISOString()
+      });
+      return res.status(201).json({ id: ref.id, ...receipt });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Secure Endpoint to Verify Receipt Status (CEO/Financial Officer/Accountant)
+  app.patch('/api/executive/receipts/:id', verifyCommandKey, async (req: any, res) => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(req.userRole)) {
+      return res.status(403).json({ error: 'ACCESS DENIED: Insufficient privilege.' });
+    }
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      await db.collection('receipts').doc(id).update({
+        status,
+        updatedAt: new Date().toISOString()
+      });
+      return res.status(200).json({ success: true });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

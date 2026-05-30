@@ -70,8 +70,16 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
   ]);
   const [projects, setProjects] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [receipts, setReceipts] = useState<any[]>([]);
+
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isLoadingContracts, setIsLoadingContracts] = useState(false);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+  const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
+  const [isLoadingReceipts, setIsLoadingReceipts] = useState(false);
+
+  // Forms and Modals
   const [isAddingContract, setIsAddingContract] = useState(false);
   const [newContractForm, setNewContractForm] = useState({
     title: '',
@@ -83,6 +91,44 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
     expiration: '',
     amount: '',
     status: 'Active'
+  });
+
+  const [isAddingEmployee, setIsAddingEmployee] = useState(false);
+  const [newEmployeeForm, setNewEmployeeForm] = useState({
+    name: '',
+    role: 'ENGINEER',
+    status: 'Headquarters',
+    duty: ''
+  });
+
+  const [isAddingProject, setIsAddingProject] = useState(false);
+  const [newProjectForm, setNewProjectForm] = useState({
+    id: '',
+    name: '',
+    location: '',
+    budget: '',
+    status: 'Execution',
+    progress: 10,
+    color: '#F26A36'
+  });
+
+  const [isAddingInvoice, setIsAddingInvoice] = useState(false);
+  const [newInvoiceForm, setNewInvoiceForm] = useState({
+    client: '',
+    amount: '',
+    status: 'Pending',
+    date: new Date().toISOString().split('T')[0],
+    project: ''
+  });
+
+  const [isAddingReceipt, setIsAddingReceipt] = useState(false);
+  const [newReceiptForm, setNewReceiptForm] = useState({
+    vendor: '',
+    category: 'Materials',
+    amount: '',
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    status: 'Pending',
+    project: ''
   });
   const [commandKeys, setCommandKeys] = useState([
     { id: 'MADECC-X7Y2-91B1', assigned: 'Project Manager', created: '2026-05-01' },
@@ -317,6 +363,262 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
     }
   };
 
+  // Full Stack Employee (HR) Handlers
+  const fetchEmployees = async () => {
+    if (!['CEO', 'SECRETARY'].includes(role)) return;
+    setIsLoadingEmployees(true);
+    try {
+      const res = await fetch('/api/executive/employees', {
+        headers: { 'x-command-key': sessionKey }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length > 0) setStaffList(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch employees:', err);
+    } finally {
+      setIsLoadingEmployees(false);
+    }
+  };
+
+  const handleCreateEmployee = async () => {
+    if (!['CEO', 'SECRETARY'].includes(role)) return alert('ACCESS DENIED: HR protocols require CEO or Secretary clearance.');
+    if (!newEmployeeForm.name || !newEmployeeForm.duty) return alert('Name and duty details are required.');
+    try {
+      const res = await fetch('/api/executive/employees', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-command-key': sessionKey 
+        },
+        body: JSON.stringify(newEmployeeForm)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setStaffList(prev => [...prev, added]);
+        setIsAddingEmployee(false);
+        setNewEmployeeForm({ name: '', role: 'ENGINEER', status: 'Headquarters', duty: '' });
+      } else {
+        const err = await res.json();
+        alert(`Failed to onboard employee: ${err.error}`);
+      }
+    } catch (err) {
+      console.error('Onboard employee error:', err);
+    }
+  };
+
+  // Full Stack Projects Handlers
+  const handleCreateProject = async () => {
+    if (!['CEO', 'PROJECT MANAGER'].includes(role)) return alert('ACCESS DENIED: Project launch requires CEO or PM clearance.');
+    if (!newProjectForm.name || !newProjectForm.budget) return alert('Name and budget are required.');
+    
+    try {
+      const finalForm = {
+        ...newProjectForm,
+        milestones: [
+          { step: 'Foundation & Grading', date: '2026-Q2', status: 'In Progress' },
+          { step: 'Structural Work', date: '2026-Q3', status: 'Scheduled' }
+        ],
+        logs: [
+          { title: 'Project Mobilisation', amount: '0 XAF', idStr: 'TXN_INIT' }
+        ]
+      };
+      const res = await fetch('/api/executive/projects', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-command-key': sessionKey 
+        },
+        body: JSON.stringify(finalForm)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setProjects(prev => [added, ...prev]);
+        setIsAddingProject(false);
+        setNewProjectForm({ id: '', name: '', location: '', budget: '', status: 'Execution', progress: 10, color: '#F26A36' });
+      } else {
+        const err = await res.json();
+        alert(`Failed to launch project: ${err.error}`);
+      }
+    } catch (err) {
+      console.error('Launch project error:', err);
+    }
+  };
+
+  const handleUpdateProject = async (id: string, updatedFields: any) => {
+    try {
+      const res = await fetch(`/api/executive/projects/${id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-command-key': sessionKey 
+        },
+        body: JSON.stringify(updatedFields)
+      });
+      if (res.ok) {
+        setProjects(prev => prev.map(p => p.id === id ? { ...p, ...updatedFields } : p));
+        if (selectedProject && selectedProject.id === id) {
+          setSelectedProject((prev: any) => ({ ...prev, ...updatedFields }));
+        }
+      } else {
+        const err = await res.json();
+        console.error(`Failed to update project: ${err.error}`);
+      }
+    } catch (err) {
+      console.error('Update project error:', err);
+    }
+  };
+
+  // Full Stack Invoices Handlers
+  const fetchInvoices = async () => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT', 'SECRETARY'].includes(role)) return;
+    setIsLoadingInvoices(true);
+    try {
+      const res = await fetch('/api/executive/invoices', {
+        headers: { 'x-command-key': sessionKey }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setInvoices(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch invoices:', err);
+    } finally {
+      setIsLoadingInvoices(false);
+    }
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(role)) return alert('ACCESS DENIED: Invoice creation requires fiscal authorization.');
+    if (!newInvoiceForm.client || !newInvoiceForm.amount) return alert('Client and Amount are required.');
+    
+    const id = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
+    const finalForm = {
+      ...newInvoiceForm,
+      id
+    };
+    try {
+      const res = await fetch('/api/executive/invoices', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-command-key': sessionKey 
+        },
+        body: JSON.stringify(finalForm)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setInvoices(prev => [added, ...prev]);
+        setIsAddingInvoice(false);
+        setNewInvoiceForm({
+          client: '',
+          amount: '',
+          status: 'Pending',
+          date: new Date().toISOString().split('T')[0],
+          project: ''
+        });
+      } else {
+        const err = await res.json();
+        alert(`Failed to issue invoice: ${err.error}`);
+      }
+    } catch (err) {
+      console.error('Issue invoice error:', err);
+    }
+  };
+
+  const handlePatchInvoiceStatus = async (id: string, status: string) => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(role)) return alert('ACCESS DENIED: Fiscal clearance required.');
+    try {
+      const res = await fetch(`/api/executive/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-command-key': sessionKey 
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status } : inv));
+      }
+    } catch (err) {
+      console.error('Patch invoice status error:', err);
+    }
+  };
+
+  // Full Stack Receipts Handlers
+  const fetchReceipts = async () => {
+    if (!['CEO', 'ACCOUNTANT', 'FINANCIAL OFFICER'].includes(role)) return;
+    setIsLoadingReceipts(true);
+    try {
+      const res = await fetch('/api/executive/receipts', {
+        headers: { 'x-command-key': sessionKey }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReceipts(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch receipts:', err);
+    } finally {
+      setIsLoadingReceipts(false);
+    }
+  };
+
+  const handleCreateReceipt = async () => {
+    if (!newReceiptForm.vendor || !newReceiptForm.amount) return alert('Vendor and Amount are required.');
+    
+    const rcpId = `RCP-${Math.floor(8000 + Math.random() * 1999)}`;
+    const finalForm = {
+      ...newReceiptForm,
+      rcpId
+    };
+    try {
+      const res = await fetch('/api/executive/receipts', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-command-key': sessionKey 
+        },
+        body: JSON.stringify(finalForm)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setReceipts(prev => [added, ...prev]);
+        setIsAddingReceipt(false);
+        setNewReceiptForm({
+          vendor: '',
+          category: 'Materials',
+          amount: '',
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          status: 'Pending',
+          project: ''
+        });
+      }
+    } catch (err) {
+      console.error('Add receipt error:', err);
+    }
+  };
+
+  const handlePatchReceiptStatus = async (id: string, status: string) => {
+    if (!['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(role)) return alert('ACCESS DENIED: Fiscal modification denied.');
+    try {
+      const res = await fetch(`/api/executive/receipts/${id}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-command-key': sessionKey 
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        setReceipts(prev => prev.map(rcp => rcp.id === id ? { ...rcp, status } : rcp));
+      }
+    } catch (err) {
+      console.error('Patch receipt status error:', err);
+    }
+  };
+
   const fetchPublishedPosts = async () => {
     try {
       const q = query(collection(db, 'web_posts'), orderBy('createdAt', 'desc'));
@@ -372,6 +674,9 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
     fetchProjects();
     fetchContracts();
     fetchPublishedPosts();
+    fetchEmployees();
+    fetchInvoices();
+    fetchReceipts();
   }, []);
 
   React.useEffect(() => {
@@ -526,18 +831,30 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
                </div>
 
                <div className="space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-[#F26A36]">Phase Milestones</h3>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-[#F26A36]">Phase Milestones</h3>
+                    <span className="text-[8px] text-slate-500 uppercase font-black">Click to toggle status</span>
+                  </div>
                   <div className="space-y-2">
-                    {[
+                    {(selectedProject.milestones || [
                       { step: 'Foundation & Grading', date: '2025-Q4', status: 'Complete' },
                       { step: 'Structural Caging', date: '2026-Q1', status: 'In Progress' },
                       { step: 'MEP Integration', date: '2026-Q3', status: 'Scheduled' }
-                    ].map((m, i) => (
-                      <div key={i} className="flex justify-between items-center p-3 bg-[#0D0F12] border border-[#262B37] rounded-lg">
+                    ]).map((m: any, i: number) => (
+                      <div 
+                        key={i} 
+                        onClick={() => {
+                          const nextStatus = m.status === 'Complete' ? 'In Progress' : m.status === 'In Progress' ? 'Scheduled' : 'Complete';
+                          const updatedMilestones = [...(selectedProject.milestones || [])];
+                          updatedMilestones[i] = { ...m, status: nextStatus };
+                          handleUpdateProject(selectedProject.id, { milestones: updatedMilestones });
+                        }}
+                        className="flex justify-between items-center p-3 bg-[#0D0F12] border border-[#262B37] hover:border-[#F26A36]/40 cursor-pointer rounded-lg transition-all"
+                      >
                         <span className="text-[11px] font-bold uppercase">{m.step}</span>
                         <div className="flex gap-4 items-center">
                           <span className="text-[9px] text-slate-500 font-mono">{m.date}</span>
-                          <span className={`text-[8px] font-black px-2 py-0.5 rounded ${m.status === 'Complete' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>{m.status}</span>
+                          <span className={`text-[8px] font-black px-2 py-0.5 rounded ${m.status === 'Complete' ? 'bg-emerald-500/10 text-emerald-500' : m.status === 'In Progress' ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-500/10 text-slate-400'}`}>{m.status}</span>
                         </div>
                       </div>
                     ))}
@@ -547,15 +864,61 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
 
             <div className="space-y-8">
                <div className="p-6 bg-[#161920] border border-[#262B37] rounded-3xl h-full">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-[#F26A36] mb-6">Financial Log</h3>
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="p-4 border-b border-[#262B37] flex justify-between items-center">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-[#F26A36] mb-4">Financial Log</h3>
+                  
+                  {/* Expense Entry Form */}
+                  <div className="p-4 bg-[#0D0F12] border border-[#262B37] rounded-xl space-y-3 mb-4">
+                    <p className="text-[9px] text-slate-400 font-black uppercase">Post Operational Ledger Entry</p>
+                    <div className="grid grid-cols-2 gap-2">
+                       <input 
+                         type="text" 
+                         placeholder="Description (e.g. Scaffolding)" 
+                         id="new_log_title"
+                         className="bg-[#161920] text-[10px] p-2 rounded-lg border border-[#262B37] text-white uppercase font-bold focus:outline-none focus:border-[#F26A36]/50 placeholder:text-slate-700 w-full"
+                       />
+                       <input 
+                         type="text" 
+                         placeholder="Outflow (e.g. -1.2M XAF)" 
+                         id="new_log_amount"
+                         className="bg-[#161920] text-[10px] p-2 rounded-lg border border-[#262B37] text-white font-mono focus:outline-none focus:border-[#F26A36]/50 placeholder:text-slate-700 w-full"
+                       />
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const titleInp = document.getElementById('new_log_title') as HTMLInputElement;
+                        const amountInp = document.getElementById('new_log_amount') as HTMLInputElement;
+                        if (titleInp && amountInp && titleInp.value && amountInp.value) {
+                          const newLog = {
+                            title: titleInp.value,
+                            amount: amountInp.value,
+                            idStr: `TXN_${Math.floor(1000 + Math.random() * 8999)}`
+                          };
+                          const updatedLogs = [newLog, ...(selectedProject.logs || [])];
+                          handleUpdateProject(selectedProject.id, { logs: updatedLogs });
+                          titleInp.value = '';
+                          amountInp.value = '';
+                        } else {
+                          alert('Specify item description & monetary outflow configuration.');
+                        }
+                      }}
+                      className="w-full text-center py-2 bg-[#F26A36] hover:bg-orange-500 text-[9px] font-black uppercase text-white rounded-lg transition-colors"
+                    >
+                      Post Operational Outflow
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    {(selectedProject.logs || [
+                      { title: 'Steel Reinforcement Bars', amount: '-4,500,000 XAF', idStr: 'TXN_8192_1' },
+                      { title: 'Excavator Fuel Dispatch', amount: '-1,200,000 XAF', idStr: 'TXN_8192_2' },
+                      { title: 'Site Inspection Transport', amount: '-450,000 XAF', idStr: 'TXN_8192_3' }
+                    ]).map((log: any, i: number) => (
+                      <div key={i} className="p-3.5 bg-[#0D0F12] border border-[#262B37]/60 rounded-xl flex justify-between items-center hover:border-white/5 transition-all">
                         <div>
-                          <p className="text-xs font-bold uppercase">Material Procurement #{i * 12}</p>
-                          <p className="text-[9px] text-slate-500">Transaction ID: TXN_8192_{i}</p>
+                          <p className="text-xs font-bold uppercase text-slate-100">{log.title}</p>
+                          <p className="text-[9px] text-slate-500 font-mono">Reference: {log.idStr}</p>
                         </div>
-                        <p className="text-sm font-black text-red-400 font-mono">-1,420,000 XAF</p>
+                        <p className="text-sm font-black text-red-400 font-mono">{log.amount}</p>
                       </div>
                     ))}
                   </div>
@@ -568,12 +931,32 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
 
     switch (activeView) {
       case 'overview':
+        const dynamicBudgetsSum = (() => {
+          let total = 0;
+          projects.forEach(p => {
+            const budgetStr = p.budget || '';
+            const numericPart = budgetStr.replace(/[^\d\.]/g, '');
+            const parsedNum = parseFloat(numericPart) || 0;
+            if (budgetStr.toUpperCase().includes('B')) {
+              total += parsedNum * 1000000000;
+            } else if (budgetStr.toUpperCase().includes('M')) {
+              total += parsedNum * 1000000;
+            } else {
+              total += parsedNum;
+            }
+          });
+          if (total === 0) return '2.45B XAF';
+          if (total >= 1000000000) return `${(total / 1000000000).toFixed(2)}B XAF`;
+          if (total >= 1000000) return `${(total / 1000000).toFixed(1)}M XAF`;
+          return `${total.toLocaleString()} XAF`;
+        })();
+
         return (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <KpiCard label="Total Portfolios" value="14 Global Sites" icon={Briefcase} />
-              <KpiCard label="Running Budgets" value="2,450,000,000 XAF" icon={Wallet} trend="+12%" />
-              <KpiCard label="Active Staff" value="142 Engineers" icon={Users} />
+              <KpiCard label="Total Portfolios" value={`${projects.length} Active Sites`} icon={Briefcase} />
+              <KpiCard label="Running Budgets" value={dynamicBudgetsSum} icon={Wallet} trend="+14.2%" />
+              <KpiCard label="Active Staff" value={`${staffList.length} Active Headcount`} icon={Users} />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 bg-[#161920] rounded-2xl border border-[#262B37] p-6 shadow-xl">
@@ -589,12 +972,119 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
         );
       case 'projects':
         return (
-          <div className="space-y-6">
-             <div className="bg-[#161920] rounded-2xl border border-[#262B37] p-6 shadow-xl">
-                <ProjectsTable projects={projects} onProjectClick={handleProjectClick} />
-             </div>
+          <div className="space-y-6 text-left">
+            <div className="flex justify-between items-center mb-6">
+               <div>
+                 <h2 className="text-2xl font-black uppercase tracking-tighter">Project Fleet Control</h2>
+                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Infrastructure Portfolios</p>
+               </div>
+               {['CEO', 'PROJECT MANAGER'].includes(role) && (
+                 <button 
+                  onClick={() => setIsAddingProject(true)}
+                  className="px-6 py-2.5 bg-[#F26A36] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-all flex items-center gap-2"
+                 >
+                   Launch Project
+                 </button>
+               )}
+            </div>
+
+            <div className="bg-[#161920] rounded-2xl border border-[#262B37] p-6 shadow-xl">
+               <ProjectsTable projects={projects} onProjectClick={handleProjectClick} />
+            </div>
+
+            {/* Launch Project Modal */}
+            <AnimatePresence>
+              {isAddingProject && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm shadow-2xl">
+                  <motion.div 
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="w-full max-w-md bg-[#161920] border border-[#262B37] p-8 rounded-3xl space-y-6 shadow-2xl relative"
+                  >
+                    <div>
+                      <h3 className="text-xl font-black uppercase tracking-tight text-white">Initialize Project Fleet</h3>
+                      <p className="text-[9px] text-slate-500 font-bold uppercase">Launch secure construction portfolio</p>
+                    </div>
+
+                    <div className="space-y-4 text-left">
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Project Code (e.g. YDE-09)</label>
+                        <input 
+                          type="text" 
+                          value={newProjectForm.id}
+                          onChange={(e) => setNewProjectForm({...newProjectForm, id: e.target.value})}
+                          className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Project Name</label>
+                        <input 
+                          type="text" 
+                          value={newProjectForm.name}
+                          onChange={(e) => setNewProjectForm({...newProjectForm, name: e.target.value})}
+                          className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Geographic Location</label>
+                        <input 
+                          type="text" 
+                          value={newProjectForm.location}
+                          onChange={(e) => setNewProjectForm({...newProjectForm, location: e.target.value})}
+                          className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Total Budget Allocation</label>
+                          <input 
+                            type="text" 
+                            placeholder="e.g. 1.2B XAF"
+                            value={newProjectForm.budget}
+                            onChange={(e) => setNewProjectForm({...newProjectForm, budget: e.target.value})}
+                            className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Current Operations Phase</label>
+                          <select 
+                            value={newProjectForm.status}
+                            onChange={(e) => setNewProjectForm({...newProjectForm, status: e.target.value})}
+                            className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                          >
+                            <option value="Execution">Execution</option>
+                            <option value="Planning">Planning</option>
+                            <option value="Structural">Structural</option>
+                            <option value="Surveying">Surveying</option>
+                            <option value="Procurement">Procurement</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                      <button 
+                        onClick={() => setIsAddingProject(false)}
+                        className="px-5 py-2 bg-white/5 text-[9px] font-black uppercase text-slate-300 rounded-lg hover:bg-white/10"
+                      >
+                        Abort
+                      </button>
+                      <button 
+                        onClick={handleCreateProject}
+                        className="px-5 py-2 bg-[#F26A36] text-[9px] font-black uppercase text-white rounded-lg hover:bg-orange-600"
+                      >
+                        Launch
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         );
+
+
       case 'web-content':
         return (
           <div className="space-y-8">
@@ -1198,7 +1688,7 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
         );
       case 'employees':
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 text-left">
             <div className="flex justify-between items-center mb-6">
                <div>
                  <h2 className="text-2xl font-black uppercase tracking-tighter">Human Resources</h2>
@@ -1211,14 +1701,101 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
                  >
                    Export Directory A4 PDF
                  </button>
-                 <button 
-                  onClick={() => alert('Employee on-boarding module requires biometric linkage at headquarters.')}
-                  className="px-4 py-2 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 hover:bg-slate-200"
-                 >
-                   <UserPlus size={14} /> Add Employee
-                 </button>
+                 {['CEO', 'SECRETARY'].includes(role) && (
+                   <button 
+                    onClick={() => setIsAddingEmployee(true)}
+                    className="px-4 py-2 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 hover:bg-slate-200"
+                   >
+                     <UserPlus size={14} /> Add Employee
+                   </button>
+                 )}
                </div>
             </div>
+
+            {/* Onboard Employee Modal */}
+            <AnimatePresence>
+              {isAddingEmployee && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm">
+                  <motion.div 
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="w-full max-w-md bg-[#161920] border border-[#262B37] p-8 rounded-3xl space-y-6 shadow-2xl relative text-left"
+                  >
+                    <div>
+                      <h3 className="text-xl font-black uppercase tracking-tight text-white">Onboard Project Staff</h3>
+                      <p className="text-[9px] text-slate-500 font-bold uppercase">Human resources enrollment console</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Employee Full Name</label>
+                        <input 
+                          type="text" 
+                          value={newEmployeeForm.name}
+                          onChange={(e) => setNewEmployeeForm({...newEmployeeForm, name: e.target.value})}
+                          className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                          placeholder="e.g. Jean-Pierre Belinga"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Operational Role</label>
+                        <select 
+                          value={newEmployeeForm.role}
+                          onChange={(e) => setNewEmployeeForm({...newEmployeeForm, role: e.target.value})}
+                          className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                        >
+                          <option value="ENGINEER">ENGINEER</option>
+                          <option value="FOREMAN">FOREMAN</option>
+                          <option value="HEAVY MACHINERY OPERATOR">HEAVY MACHINERY OPERATOR</option>
+                          <option value="CIVIL INSPECTOR">CIVIL INSPECTOR</option>
+                          <option value="SITE SECURITY">SITE SECURITY</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Duty Description</label>
+                        <input 
+                          type="text" 
+                          value={newEmployeeForm.duty}
+                          onChange={(e) => setNewEmployeeForm({...newEmployeeForm, duty: e.target.value})}
+                          className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                          placeholder="e.g. Overseeing foundation grading and concrete pours"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-black uppercase tracking-widest block mb-1">Duty Location Status</label>
+                        <select 
+                          value={newEmployeeForm.status}
+                          onChange={(e) => setNewEmployeeForm({...newEmployeeForm, status: e.target.value})}
+                          className="w-full bg-[#0D0F12] border border-[#262B37] p-3 rounded-lg text-xs font-bold text-white focus:outline-none focus:border-[#F26A36]"
+                        >
+                          <option value="Headquarters">Headquarters</option>
+                          <option value="Yaoundé Site A">Yaoundé Site A</option>
+                          <option value="Douala Site B">Douala Site B</option>
+                          <option value="Edea Hydro Hub">Edea Hydro Hub</option>
+                          <option value="Kribi Logistic Site">Kribi Logistic Site</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                      <button 
+                        onClick={() => setIsAddingEmployee(false)}
+                        className="px-5 py-2 bg-white/5 text-[9px] font-black uppercase text-slate-300 rounded-lg hover:bg-white/10"
+                      >
+                        Abort
+                      </button>
+                      <button 
+                        onClick={handleCreateEmployee}
+                        className="px-5 py-2 bg-[#F26A36] text-[9px] font-black uppercase text-white rounded-lg hover:bg-orange-600 animate-pulse"
+                      >
+                        Onboard Duty Staff
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {staffList.map((emp, i) => (
                 <div key={i} className="p-6 bg-[#161920] border border-[#262B37] rounded-2xl space-y-4 hover:border-[#F26A36]/50 transition-colors">
@@ -1248,27 +1825,29 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
           </div>
         );
       case 'invoices':
-        const invoices = [
-          { id: 'INV-2026-001', client: 'Port Authority', amount: '12,500,000 XAF', status: 'Paid' },
-          { id: 'INV-2026-002', client: 'Bolloré Logistics', amount: '8,200,000 XAF', status: 'Pending' },
-          { id: 'INV-2026-003', client: 'State Housing', amount: '45,000,000 XAF', status: 'Overdue' }
-        ];
-
         const filteredInvoices = invoices.filter(inv => 
-          inv.client.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
-          inv.id.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
-          inv.status.toLowerCase().includes(invoiceSearch.toLowerCase())
+          inv.client?.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
+          inv.id?.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
+          inv.status?.toLowerCase().includes(invoiceSearch.toLowerCase())
         );
 
         return (
           <div className="space-y-6">
-            <div className="bg-[#161920] border border-[#262B37] rounded-3xl overflow-hidden p-8">
+            <div className="bg-[#161920] border border-[#262B37] rounded-3xl overflow-hidden p-8 text-left">
                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
                  <div>
                    <h2 className="text-2xl font-black uppercase tracking-tighter">Fiscal Audit & Invoices</h2>
                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Official Financial Records System</p>
                  </div>
                  <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                   {['CEO', 'FINANCIAL OFFICER', 'ACCOUNTANT'].includes(role) && (
+                     <button 
+                       onClick={() => setIsAddingInvoice(true)}
+                       className="px-5 py-3 bg-[#F26A36] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-colors"
+                     >
+                       Issue Invoice
+                     </button>
+                   )}
                    <div className="relative flex-1">
                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                      <input 
@@ -1757,56 +2336,60 @@ export const ExecutiveDashboard: React.FC<ExecutiveDashboardProps> = ({ role, us
                         Filter
                       </button>
                     </div>
-                 </div>
+                  </div>
 
-                 <div className="space-y-2">
-                    {[
-                      { id: 'RCP-8812', vendor: 'Steel-Cam Industries', category: 'Materials', amount: '8,450,000 XAF', date: 'May 14, 2026', status: 'Verified' },
-                      { id: 'RCP-8813', vendor: 'TotalEnergies Logistics', category: 'Fuel', amount: '1,200,000 XAF', date: 'May 13, 2026', status: 'Pending' },
-                      { id: 'RCP-8814', vendor: 'Concrete Solutions SARL', category: 'Materials', amount: '12,000,000 XAF', date: 'May 12, 2026', status: 'Verified' },
-                      { id: 'RCP-8815', vendor: 'Global Office Supplies', category: 'Admin', amount: '450,000 XAF', date: 'May 10, 2026', status: 'Verified' },
-                    ].map((rcp, i) => (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        key={rcp.id} 
-                        className="p-5 bg-black/40 border border-[#262B37] rounded-2xl flex flex-col md:flex-row md:items-center justify-between group hover:border-[#F26A36]/40 transition-all gap-4"
-                      >
-                         <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-[#F26A36] transition-colors">
-                               <Receipt size={20} />
-                            </div>
-                            <div>
-                               <div className="flex items-center gap-2">
-                                  <p className="text-sm font-black uppercase tracking-tight">{rcp.vendor}</p>
-                                  <span className="text-[10px] font-mono text-slate-500 font-bold">{rcp.id}</span>
-                               </div>
-                               <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest mt-1">
-                                  <span className="text-slate-500">{rcp.category}</span>
-                                  <span className="text-slate-700">•</span>
-                                  <span className="text-slate-500">{rcp.date}</span>
-                               </div>
-                            </div>
-                         </div>
+                  <div className="space-y-2">
+                    {(receipts && receipts.length > 0 ? receipts : [
+                      { rcpId: 'RCP-8812', vendor: 'Steel-Cam Industries', category: 'Materials', amount: '8,450,000 XAF', date: 'May 14, 2026', status: 'Verified' },
+                      { rcpId: 'RCP-8813', vendor: 'TotalEnergies Logistics', category: 'Fuel', amount: '1,200,000 XAF', date: 'May 13, 2026', status: 'Pending' },
+                      { rcpId: 'RCP-8814', vendor: 'Concrete Solutions SARL', category: 'Materials', amount: '12,000,000 XAF', date: 'May 12, 2026', status: 'Verified' },
+                      { rcpId: 'RCP-8815', vendor: 'Global Office Supplies', category: 'Admin', amount: '450,000 XAF', date: 'May 10, 2026', status: 'Verified' }
+                    ]).map((rcp: any, i: number) => {
+                      const displayId = rcp.rcpId || rcp.id || `RCP-${8812+i}`;
+                      const displayDate = rcp.date || rcp.createdAt || 'May 10, 2026';
+                      return (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          key={displayId} 
+                          className="p-5 bg-black/40 border border-[#262B37] rounded-2xl flex flex-col md:flex-row md:items-center justify-between group hover:border-[#F26A36]/40 transition-all gap-4"
+                        >
+                           <div className="flex items-center gap-5">
+                              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-[#F26A36] transition-colors">
+                                 <Receipt size={20} />
+                              </div>
+                              <div>
+                                 <div className="flex items-center gap-2">
+                                    <p className="text-sm font-black uppercase tracking-tight">{rcp.vendor}</p>
+                                    <span className="text-[10px] font-mono text-slate-500 font-bold">{displayId}</span>
+                                 </div>
+                                 <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest mt-1">
+                                    <span className="text-slate-500">{rcp.category}</span>
+                                    <span className="text-slate-700">•</span>
+                                    <span className="text-slate-500">{displayDate}</span>
+                                 </div>
+                              </div>
+                           </div>
 
-                         <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-[#262B37] pt-4 md:pt-0">
-                            <div className="text-right">
-                               <p className="text-lg font-black text-white font-mono">{rcp.amount}</p>
-                               <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${rcp.status === 'Verified' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                                 {rcp.status}
-                               </span>
-                            </div>
-                            <button 
-                              onClick={() => generatePDF(`Receipt_${rcp.id}`, `Vendor: ${rcp.vendor}\nCategory: ${rcp.category}\nAmount: ${rcp.amount}\nDate: ${rcp.date}\nStatus: ${rcp.status}\n\nMADECC Official Financial Record.`)}
-                              className="p-3 bg-white/5 border border-[#262B37] rounded-xl hover:bg-[#F26A36] hover:text-white transition-all shadow-lg"
-                            >
-                               <FileText size={18} />
-                            </button>
-                         </div>
-                      </motion.div>
-                    ))}
-                 </div>
+                           <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-[#262B37] pt-4 md:pt-0">
+                              <div className="text-right">
+                                 <p className="text-lg font-black text-white font-mono">{rcp.amount}</p>
+                                 <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${rcp.status === 'Verified' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                   {rcp.status}
+                                 </span>
+                              </div>
+                              <button 
+                                onClick={() => generatePDF(`Receipt_${displayId}`, `Vendor: ${rcp.vendor}\nCategory: ${rcp.category}\nAmount: ${rcp.amount}\nDate: ${displayDate}\nStatus: ${rcp.status}\n\nMADECC Official Financial Record.`)}
+                                className="p-3 bg-white/5 border border-[#262B37] rounded-xl hover:bg-[#F26A36] hover:text-white transition-all shadow-lg"
+                              >
+                                 <FileText size={18} />
+                              </button>
+                           </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
 
                  <div className="mt-10 flex justify-center">
                     <button className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white transition-colors">

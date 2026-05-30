@@ -1,9 +1,22 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Mail, Phone, MapPin, Send, MessageSquare, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 export const ContactPage: React.FC = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    serviceType: 'Structural Design',
+    budget: '$250K - $1M',
+    location: '',
+    timeline: '1-3 Months',
+    estimatedArea: '500',
+    materialsOption: 'Reinforced Concrete Column Structure',
+    message: ''
+  });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,7 +32,19 @@ export const ContactPage: React.FC = () => {
 
       if (response.ok) {
         setStatus('success');
-        setFormData({ name: '', email: '', message: '' });
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          company: '',
+          serviceType: 'Structural Design',
+          budget: '$250K - $1M',
+          location: '',
+          timeline: '1-3 Months',
+          estimatedArea: '500',
+          materialsOption: 'Reinforced Concrete Column Structure',
+          message: ''
+        });
       } else {
         setStatus('error');
       }
@@ -30,6 +55,12 @@ export const ContactPage: React.FC = () => {
 
   return (
     <div className="pt-32 pb-20 px-6 font-sans">
+      <Helmet>
+        <title>Contact MADECC Construction - Site Tender & Proposal Request</title>
+        <meta name="description" content="Connect with MADECC Construction's operational field offices in Yaoundé, Bastos. Request bids, submit tenders, or consult with our structural analysts." />
+        <meta name="keywords" content="contact madecc, submit construction tender, request structural quote, building contractors yaounde" />
+        <link rel="canonical" href="https://madecc-construction.com/contact" />
+      </Helmet>
       <div className="container mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -41,7 +72,7 @@ export const ContactPage: React.FC = () => {
             <span className="text-[#F26A36]">OPERATIONS.</span>
           </h1>
           <p className="text-lg text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight max-w-xl">
-            Established field offices in Yaoundé. Secure communication lines open 24/7.
+            Established field offices in Yaoundé. Secure communication lines open 24/7 for project evaluations and technical consultations.
           </p>
         </motion.div>
 
@@ -57,12 +88,12 @@ export const ContactPage: React.FC = () => {
                   <CheckCircle2 size={40} />
                 </div>
                 <h3 className="text-3xl font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-tighter">Transmission Successful</h3>
-                <p className="text-emerald-700 dark:text-emerald-500 font-medium uppercase tracking-tight">Our operations team will review your inquiry and respond within 24 hours.</p>
+                <p className="text-emerald-700 dark:text-emerald-500 font-medium uppercase tracking-tight">Our operations team will review your construction requirements, evaluate structural parameters, and respond with a preliminary proposal within 24 hours.</p>
                 <button 
                   onClick={() => setStatus('idle')}
                   className="px-8 py-4 bg-emerald-500 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 transition-all"
                 >
-                  Send Another
+                  Submit Another Bid Request
                 </button>
               </motion.div>
             ) : (
@@ -75,7 +106,7 @@ export const ContactPage: React.FC = () => {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       type="text" 
-                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all" 
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white" 
                       placeholder="John Doe" 
                     />
                   </div>
@@ -86,20 +117,130 @@ export const ContactPage: React.FC = () => {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       type="email" 
-                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all" 
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white" 
                       placeholder="john@company.com" 
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Phone Number</label>
+                    <input 
+                      required
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      type="tel" 
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white" 
+                      placeholder="+237 6XX XX XX XX" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Company / Organization</label>
+                    <input 
+                      value={formData.company}
+                      onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                      type="text" 
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white" 
+                      placeholder="e.g., MADECC Capital" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Service Required</label>
+                    <select 
+                      value={formData.serviceType}
+                      onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white"
+                    >
+                      <option value="Structural Design">Structural Design & Audit</option>
+                      <option value="Civil Engineering">Civil Engineering & Bridges</option>
+                      <option value="Industrial Construction">Industrial & Warehousing</option>
+                      <option value="Residential Development">Residential High-Rise</option>
+                      <option value="BIM & Clash Detection">BIM Modeling & Simulation</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estimated Project Budget</label>
+                    <select 
+                      value={formData.budget}
+                      onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white"
+                    >
+                      <option value="Under $250K">Under $250K USD</option>
+                      <option value="$250K - $1M">$250K - $1M USD</option>
+                      <option value="$1M - $5M">$1M - $5M USD</option>
+                      <option value="$5M - $20M">$5M - $20M USD</option>
+                      <option value="$20M+">$20M+ USD / Mega Scale</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Project Location / Site Coordinates</label>
+                    <input 
+                      required
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      type="text" 
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white" 
+                      placeholder="e.g., Bastos, Yaoundé" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Timeline / Scope Speed</label>
+                    <select 
+                      value={formData.timeline}
+                      onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white"
+                    >
+                      <option value="Immediate">Immediate Deployment (0-30 days)</option>
+                      <option value="1-3 Months">Pre-Planning phase (1-3 months)</option>
+                      <option value="3-6 Months">Technical study phase (3-6 months)</option>
+                      <option value="6+ Months">Long-term roadmap (6+ months)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Built Area (m²)</label>
+                    <input 
+                      required
+                      value={formData.estimatedArea}
+                      onChange={(e) => setFormData({ ...formData, estimatedArea: e.target.value })}
+                      type="number" 
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white" 
+                      placeholder="e.g. 1200" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Structural Material Type</label>
+                    <select 
+                      value={formData.materialsOption}
+                      onChange={(e) => setFormData({ ...formData, materialsOption: e.target.value })}
+                      className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white"
+                    >
+                      <option value="Reinforced Concrete Column Structure">Reinforced Concrete Columns</option>
+                      <option value="Hot-Rolled Steel Frame Structure">Heavy Hot-Rolled Structural Steel</option>
+                      <option value="Hybrid Composite Stress Matrix">Hybrid Concrete-Steel Composite</option>
+                      <option value="Lightweight Timber Frame Profile">Treated Structural Timber & Timber Joists</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Message</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detailed Project Briefing</label>
                   <textarea 
                     required
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    rows={6} 
-                    className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all" 
-                    placeholder="Project details or inquiry..."
+                    rows={5} 
+                    className="w-full bg-slate-50 dark:bg-[#161920] border border-slate-200 dark:border-[#262B37] rounded-xl p-4 text-sm font-bold uppercase tracking-widest focus:outline-none focus:border-[#F26A36] transition-all text-slate-900 dark:text-white" 
+                    placeholder="Provide a structural description, site dimensions, or specific design constraints..."
                   ></textarea>
                 </div>
                 <button 
@@ -109,11 +250,11 @@ export const ContactPage: React.FC = () => {
                   {status === 'loading' ? (
                     <Loader2 size={18} className="animate-spin" />
                   ) : (
-                    <>Deploy Inquiry <Send size={18} /></>
+                    <>Submit Tender / Request Bid Proposal <Send size={18} /></>
                   )}
                 </button>
                 {status === 'error' && (
-                  <p className="text-red-500 text-[10px] font-black uppercase tracking-widest text-center mt-4">Failed to send message. Please try again.</p>
+                  <p className="text-red-500 text-[10px] font-black uppercase tracking-widest text-center mt-4">Failed to register proposal. Check communication layers and try again.</p>
                 )}
               </form>
             )}

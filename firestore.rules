@@ -97,6 +97,17 @@ service cloud.firestore {
       allow write: if false; // System only
     }
 
+    // 7. web_posts
+    match /web_posts/{postId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // 8. test
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
     function isSecretary() { return isEmailVerified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'SECRETARY'; }
   }
 }

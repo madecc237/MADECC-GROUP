@@ -4,6 +4,37 @@ import { Calendar, User, ArrowRight, ShieldCheck, X, Plus, Edit2, Upload, Trash2
 import { useTranslation } from 'react-i18next';
 import { db } from '../services/firebase';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { Helmet } from 'react-helmet-async';
+
+const DEFAULT_POSTS = [
+  {
+    id: "default-1",
+    title: "Digital Twins in Central African Construction: Real-Time Structural Mapping",
+    category: "Innovation",
+    author: "MADECC Technical Board",
+    date: "May 25, 2026",
+    img: "https://images.unsplash.com/photo-1581094751156-4d2621743048?auto=format&fit=crop&q=80&w=800",
+    content: "As metropolitan hubs like Yaoundé and Douala undergo unprecedented high-modernity expansions, the structural engineering sector faces critical geological and scale challenges. Traditional static drafting has reached its limit; today, the implementation of Digital Twins powered by Building Information Modeling (BIM) is reorganizing how infrastructure assets are designed, executed, and monitored for multi-decade longevity.\n\nMADECC Group stands at the forefront of this digital transition in Cameroon. By constructing precise coordinate-based digital replicas of our skyscrapers (such as the Bastos Residential Complex and the Maritime Executive Tower), our civil and structural engineers simulate active physical stress curves, thermal expansion indexes, and subterranean moisture migrations before heavy machinery ever touches the soil.\n\nDuring the concrete casting phase, specialized sensors embedded directly within the cured foundations feed back vital hydration datasets. These streams map out localized thermal deltas, enabling our digital command center to verify structural hardening and prevent micro-fissure configurations. This digital-twin feedback loop increases structural reliability by 24% and delivers a definitive mathematical baseline for external technical control bureaus (such as Labogen and ministerial aggregates) to inspect site progress safely."
+  },
+  {
+    id: "default-2",
+    title: "Adhering to Eurocode 2 in Cameroon: Structural Rebar Mapping Best Practices",
+    category: "Sustainability",
+    author: "Dr. Marc-Antoine Dembélé",
+    date: "April 18, 2026",
+    img: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800",
+    content: "Designing reinforced concrete structures in tropical and clay-rich soil environments requires strict compliance with high-tolerance safety margins. While historical projects in Cameroon relied on classical French BAEL models, modern engineering demands the rigorous precision of Eurocode 2 (EN 1992-1-1) for designing structural slabs, load-bearing core columns, and subterranean retaining walls.\n\nAt MADECC Group, Eurocode 2 compliance begins with structural rebar mapping and exact concrete coverage allocation. Tropical climates exhibit elevated relative humidity, which accelerates carbonation depths in cured concrete. Without proper coverage, atmospheric moisture can breach the concrete matrix, leading to electrochemical rebar oxidation (corrosion) and eventual structural spalling.\n\nTo mitigate these risks, our senior design team implements a minimum nominal concrete cover (Cnom) of 45mm to 50mm for all underground pile caps and structural grades. Furthermore, we mandate the use of high-yield carbon-steel rebars paired with meticulously calculated stirrup spacing to withstand dynamic seismic shearing. This systematic focus on nominal coverage, compressive strength classes (utilizing standard C30/37 structural mixes), and robust rebar configurations ensures that our buildings possess a minimum hundred-year structural life span, remaining immune to regional climate stress."
+  },
+  {
+    id: "default-3",
+    title: "Geotechnical Engineering: Mitigating Subterranean Soil Settling in Yaoundé",
+    category: "Safety",
+    author: "Eng. Estelle Kamdem",
+    date: "March 11, 2026",
+    img: "https://images.unsplash.com/photo-1513828583688-c52646db42da?auto=format&fit=crop&q=80&w=800",
+    content: "Soil mechanics represent the literal foundation of physical civil engineering. In Yaoundé, the topographical variety of rolling granite hills flanked by clay-dominant lowlands presents substantial challenges for foundation engineers. Saturated clay terrains exhibit extreme volumetric changes—welling during tropical wet seasons and contracting dramatically in dry seasons—resulting in differential structural settling if foundations are improperly designed.\n\nTo secure structures against these shifting subsurface layers, MADECC Group employs advanced geotechnical modeling as the primary gatekeeper of site work. Our diagnostic protocol begins with deep core boring to extract geological strata samples up to 35 meters below ground level. Then, dynamic cone penetration tests (DCPT) are run on-site to map subterranean bearing capacities (kPa).\n\nFor high-rise developments located in variable geologies, classical shallow spread footings are entirely bypassed in favor of deep structural foundations. We construct cast-in-place friction piles locked directly into subterranean stable granite bedrock, connected via rigid concrete grade beams. For intermediate heights, multi-axial reinforced raft foundations are laid to distribute overall building gravity uniformly, eliminating the risk of tilted settlement and preserving structural equilibrium for decades."
+  }
+];
 
 export const BlogPage: React.FC = () => {
   const { t } = useTranslation();
@@ -29,7 +60,7 @@ export const BlogPage: React.FC = () => {
     const q = query(collection(db, 'web_posts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPosts(postsData);
+      setPosts(postsData.length > 0 ? postsData : DEFAULT_POSTS);
       setLoading(false);
     });
 
@@ -95,6 +126,12 @@ export const BlogPage: React.FC = () => {
 
   return (
     <div className="pt-32 pb-20 relative">
+      <Helmet>
+        <title>MADECC Construction Blog - Built Intelligence & Civil Engineering Insights</title>
+        <meta name="description" content="Stay updated with the latest trends in civil engineering, digital twins, architectural simulation, and BIM workflows across Africa. Articles curated by MADECC's technical operations boards." />
+        <meta name="keywords" content="construction blogging, engineering innovations cameroon, digital twins infrastructure, bim models africa" />
+        <link rel="canonical" href="https://madecc-construction.com/blog" />
+      </Helmet>
       <AnimatePresence>
         {isEditing && (
           <motion.div 
